@@ -16,7 +16,7 @@ from time import sleep
 STORY_DIR = '../stories/'
 STORY_FILENAME = 'story'
 STORY_LENGTH = 60
-START_FULL_SCREEN = True
+START_FULL_SCREEN = False
 VIDEO_HEIGHT = 900
 VIDEO_WIDTH = 1400
 HIDE_TOGGLE = True
@@ -42,7 +42,8 @@ class SBFrame(wx.Frame):
         pnl2 = wx.Panel(self, wx.ID_ANY)
         pnl2.SetBackgroundColour('black')
         record = wx.Button(pnl2, wx.ID_ANY, label="TOUCH HERE TO RECORD YOUR OWN " + str(STORY_LENGTH) + " SECOND STORY!", style=wx.ALIGN_CENTER)
-        record.SetForegroundColour('white')
+        #record.SetForegroundColour('white')
+        record.SetForegroundColour('black')
         record.SetBackgroundColour('black')
         record.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         #record.Bind(wx.EVT_BUTTON, self.SwitchPanel)
@@ -59,9 +60,10 @@ class SBFrame(wx.Frame):
         sizer.Add(pnl1, flag=wx.EXPAND | wx.ALL)
         sizer.Add(pnl2, proportion=1, flag=wx.EXPAND | wx.ALL)
         #init lpanel
-        #self.SetSizer(sizer)
-        #lpanel.Layout()
+        self.SetSizer(sizer)
+        lpanel.Layout()
 
+        '''
         rpanel = wx.Panel(self, wx.ID_ANY)
         rpanel.SetBackgroundColour('black')
         pnl3 = wx.Panel(self, wx.ID_ANY, size=(600,900))
@@ -87,10 +89,12 @@ class SBFrame(wx.Frame):
         #init rpanel
         self.SetSizer(sizer2)
         rpanel.Layout()
+        '''
 
     #def SwitchPanel(self, e):
         #TODO switchpanel
 
+    '''
     def StoryLoop(self, e):
         obj = e.GetEventObject()
         obj.Hide()
@@ -113,19 +117,36 @@ class SBFrame(wx.Frame):
                         sleep(10)
                     else:
                         break
+    '''
 
-    #def Record(self, e):
+    def StoryLoop(self, e):
+        btn = e.GetEventObject()
+        btn.Show(False)
+        files = os.listdir(STORY_DIR)
+        looping = True
+        while(looping):
+            for file in files:
+                omx = Popen(['omxplayer','--win','200 0 1700 900', STORY_DIR + file], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+                #omx = Popen(['omxplayer','--win','0 0 100 100', STORY_DIR + file], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+                omx.communicate()
+                #self.CountDown()
+            #return false here until we can stop it
+            #looping = False
+
+    '''
+    def Record(self, e):
 
     def RecordVideo(self, e):
         obj = e.GetEventObject()
         print(obj)
         
-    #def CountDown(self):
+    def CountDown(self):
         #self.timer.Bind(wx.EVT_TIMER, self.update, self.timer)
         #TODO countdown
 
-    #def update(self, event):
+    def update(self, event):
         #TODO update
+    '''
 
 class StoryBox(wx.App):
     def OnInit(self):
