@@ -76,7 +76,7 @@ class SBFrame(wx.Frame):
         record2.SetForegroundColour('white')
         record2.SetBackgroundColour('red')
         record2.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        #record2.Bind(wx.EVT_BUTTON, self.RecordVideo)
+        record2.Bind(wx.EVT_BUTTON, self.RecordVideo)
         vbox2 = wx.BoxSizer(wx.VERTICAL)
         vbox2.Add(clock, flag=wx.ALIGN_RIGHT)
         vbox2.Add(record2, flag=wx.ALIGN_CENTER_HORIZONTAL)
@@ -115,8 +115,11 @@ class SBFrame(wx.Frame):
                         break
 
     #def Record(self, e):
+
+    def RecordVideo(self, e):
+        obj = e.GetEventObject()
+        print(obj)
         
-            
     #def CountDown(self):
         #self.timer.Bind(wx.EVT_TIMER, self.update, self.timer)
         #TODO countdown
