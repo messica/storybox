@@ -17,7 +17,6 @@ STORY_LENGTH = 60
 START_FULL_SCREEN = False
 VIDEO_HEIGHT = 900
 VIDEO_WIDTH = 1400
-HIDE_TOGGLE = False
 
 #---- Menu Stuff
 RPANEL = 101
@@ -25,32 +24,61 @@ LPANEL = 102
 PPANEL = 103
 
 #---- Classes
-
+'''
 class LoopPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent=parent)
         self.SetBackgroundColour('black')
 
-        #create main sizer
-        sizer = wx.BoxSizer(wx.VERTICAL)
-
         #create widgets
-        record = wx.Button(self, wx.ID_ANY, "TOUCH HERE TO RECORD YOUR OWN " + str(STORY_LENGTH) + " SECOND STORY!", name='record_panel')
+        panel = wx.Panel(self, wx.ID_ANY, size=(600,900))
+        panel.SetBackgroundColour('black')
+        panel2 = wx.Panel(self, wx.ID_ANY)
+        panel2.SetBackgroundColour('black')
+        record = wx.Button(panel2, wx.ID_ANY, "TOUCH HERE TO RECORD YOUR OWN " + str(STORY_LENGTH) + " SECOND STORY!", name='rpanel', size=(1000,100))
         record.SetForegroundColour('white')
         record.SetBackgroundColour('black')
         record.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        #record.Bind(wx.EVT_BUTTON, self.SwitchPanel)
+        record.Bind(wx.EVT_BUTTON, parent.SwitchPanel)
 
         #create sizers
-        hbox = wx.BoxSizer(wx.HORIZONTAL)
         vbox = wx.BoxSizer(wx.VERTICAL)
 
         #add wigets to sizers
-        hbox.Add(record, 0, wx.ALIGN_BOTTOM | wx.EXPAND)
-        vbox.AddStretchSpacer()
-        vbox.Add(hbox, 0, wx.ALIGN_CENTER | wx.EXPAND)
+        vbox.Add(record, wx.ALIGN_CENTER_HORIZONTAL)
 
-        sizer.Add(vbox, wx.EXPAND)
+        panel2.SetSizer(vbox)
+
+        #create main sizer
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(panel, wx.EXPAND)
+        sizer.Add(panel2, wx.EXPAND)
+        self.SetSizer(sizer)'''
+
+class LoopPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent=parent)
+        self.SetBackgroundColour('black')
+        panel = wx.Panel(self, wx.ID_ANY, size=(600,900))
+        panel.SetBackgroundColour('black')
+        panel2 = wx.Panel(self, wx.ID_ANY)
+        panel2.SetBackgroundColour('black')
+        clock = wx.StaticText(panel, wx.ID_ANY, ":" + str(STORY_LENGTH), style=wx.ALIGN_CENTER, size=(400,400))
+        clock.SetForegroundColour('black')
+        clock.SetBackgroundColour('black')
+        clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        record = wx.Button(panel2, wx.ID_ANY, label="TOUCH HERE TO RECORD YOUR OWN " + str(STORY_LENGTH) + " SECOND STORY!", name='rpanel', style=wx.ALIGN_LEFT)
+        record.SetForegroundColour('white')
+        record.SetBackgroundColour('black')
+        record.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        record.Bind(wx.EVT_BUTTON, parent.SwitchPanel)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(clock, flag=wx.ALIGN_RIGHT)
+        vbox.Add(record, flag=wx.ALIGN_CENTER_HORIZONTAL)
+        panel.SetSizer(vbox)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(panel, flag=wx.EXPAND | wx.ALL)
+        sizer.Add(panel2, flag=wx.EXPAND | wx.ALL)
         self.SetSizer(sizer)
 
 class RecordPanel(wx.Panel):
@@ -65,11 +93,11 @@ class RecordPanel(wx.Panel):
         clock.SetForegroundColour('#CCAA00')
         clock.SetBackgroundColour('#CCCCCC')
         clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        record = wx.Button(panel2, wx.ID_ANY, label="START RECORDING", style=wx.ALIGN_LEFT, size=(800,100))
+        record = wx.Button(panel2, wx.ID_ANY, label="START RECORDING", name="lpanel", style=wx.ALIGN_LEFT, size=(800,100))
         record.SetForegroundColour('white')
-        record.SetBackgroundColour('red')
+        record.SetBackgroundColour('green')
         record.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        #record.Bind(wx.EVT_BUTTON, self.RecordVideo)
+        record.Bind(wx.EVT_BUTTON, self.ToggleRecord)
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(clock, flag=wx.ALIGN_RIGHT)
         vbox.Add(record, flag=wx.ALIGN_CENTER_HORIZONTAL)
@@ -78,6 +106,19 @@ class RecordPanel(wx.Panel):
         sizer.Add(panel, flag=wx.EXPAND | wx.ALL)
         sizer.Add(panel2, flag=wx.EXPAND | wx.ALL)
         self.SetSizer(sizer)
+
+    def ToggleRecord(self, e):
+        global recording
+        btn = e.GetEventObject()
+        if not recording:
+            wx.GetApp().StartRecording()
+            btn.SetBackgroundColour('red')
+            btn.SetLabel('STOP RECORDING')
+        else:
+            wx.GetApp().StopRecording()
+            btn.SetBackgroundColour('green')
+            btn.SetLabel('START RECORDING')
+            self.GetParent().SwitchPanel(e)
 
 class PreviewPanel(wx.Panel):
     def __init__(self, parent):
@@ -122,30 +163,30 @@ class SBFrame(wx.Frame):
         self.ppanel.Hide()
         self.rpanel.Hide()
         
-    def SwitchPanel(self, e):
+    def SwitchPanel(self, e=None, panel=None):
         storybox = wx.GetApp()
         self.HidePanels()
+        print(e)
         
         #switching from menu
         panel = e.GetId()
         if panel is RPANEL:
-            #self.rpanel.Show()
             storybox.RecordPanel()
         elif panel is LPANEL:
-            #self.lpanel.Show()
             storybox.LoopPanel()
         elif panel is PPANEL:
-            self.ppanel.Show()
+            storybox.PreviewPanel()
         else:
             #switching from button
             btn = e.GetEventObject()
-            panel = e.GetName()
-            if panel is rpanel:
-                self.rpanel.Show()
-            if panel is lpanel:
-                self.lpanel.Show()
-            if panel is ppanel:
-                self.ppanel.Show()
+            panel = btn.GetName()
+            print(panel)
+            if panel == 'rpanel':
+                storybox.RecordPanel()
+            if panel == 'lpanel':
+                storybox.LoopPanel()
+            if panel == 'ppanel':
+                storybox.PreviewPanel()
 
         self.Layout()
 
@@ -166,7 +207,7 @@ class StoryBox(wx.App):
         return True;
 
     def LoopVideos(self):
-        global looping, loop
+        global looping
         looping = True
         while looping:
             files = os.listdir(STORY_DIR)
@@ -174,22 +215,53 @@ class StoryBox(wx.App):
                 print(file)
                 #call(['omxplayer','--win','200 0 1700 900', STORY_DIR + file])
                 call(['omxplayer','--win','0 0 100 100', STORY_DIR + file])
-                #loop = Popen(['omxplayer', '--win', '0 0 100 100', STORY_DIR + file])
                 if not looping:
                     break
-            
+
+    def PreviewCamera(self):
+        call(['picam', '--alsadev', 'hw:1,0', '--previewrect', '0,0,100,100'])
+        #call(['picam', '--alsadev', 'hw:1,0', '--previewrect', '200,0,1024,768'])
+
+    def StartRecording(self):
+        global recording
+        print('StartRecording')
+        open('hooks/start_record', 'w')
+        recording = True
+
+    def StopRecording(self):
+        global recording
+        print('StopRecording')
+        open('hooks/stop_record', 'w')
+        recording = False
+
+    def PreviewVideo(self):
+        print('PreviewVideo')
+        
     def LoopPanel(self):
+        self.CleanUp()
         self.frame.lpanel.Show()
         #start video loop
-        thread = threading.Thread(target=self.LoopVideos)
-        thread.start()
+        loop = threading.Thread(target=self.LoopVideos)
+        loop.start()
+
+    def RecordPanel(self):
+        self.CleanUp()
+        self.frame.rpanel.Show()
+        #start camera
+        camera = threading.Thread(target=self.PreviewCamera)
+        camera.start()
             
     def PreviewPanel(self):
-        print('preview panel')
+        self.CleanUp()
+        self.frame.ppanel.Show()
+        #preview video
+        preview = threading.Thread(target=self.PreviewVideo)
+        preview.start()
 
-    def CleanUp(self, e):
-        global looping
+    def CleanUp(self, e=None):
+        global looping, recording
         looping = False
+        recording = False
         pkill = call('pkill omxplayer', shell=True)
         pkill = call('pkill picam', shell=True)
     
