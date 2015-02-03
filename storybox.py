@@ -7,10 +7,8 @@
 #=======================================
 
 #---- Includes
-import os
-import wx
-from subprocess import Popen, PIPE
-from time import sleep
+import os, wx, threading
+from subprocess import call, Popen, PIPE
 
 #---- Settings
 STORY_DIR = '../stories/'
@@ -21,7 +19,7 @@ VIDEO_HEIGHT = 900
 VIDEO_WIDTH = 1400
 HIDE_TOGGLE = False
 
-#---- Menu Constants
+#---- Menu Stuff
 RPANEL = 101
 LPANEL = 102
 PPANEL = 103
@@ -32,30 +30,33 @@ class LoopPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent=parent)
         self.SetBackgroundColour('black')
-        panel = wx.Panel(self, wx.ID_ANY)
-        panel.SetBackgroundColour('black')
-        record = wx.Button(panel, wx.ID_ANY, label="TOUCH HERE TO RECORD YOUR OWN " + str(STORY_LENGTH) + " SECOND STORY!", style=wx.ALIGN_CENTER, name='record_panel')
+
+        #create main sizer
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        #create widgets
+        record = wx.Button(self, wx.ID_ANY, "TOUCH HERE TO RECORD YOUR OWN " + str(STORY_LENGTH) + " SECOND STORY!", name='record_panel')
         record.SetForegroundColour('white')
         record.SetBackgroundColour('black')
         record.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         #record.Bind(wx.EVT_BUTTON, self.SwitchPanel)
-        startStop = wx.ToggleButton(panel, wx.ID_ANY, label='Start')
-        startStop.SetBackgroundColour('purple')
-        startStop.SetForegroundColour('white')
-        startStop.SetFont(wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        #startStop.Bind(wx.EVT_TOGGLEBUTTON, self.StoryLoop)
+
+        #create sizers
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(record, flag=wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL)
-        vbox.Add(startStop, flag=wx.ALIGN_RIGHT | wx.ALIGN_BOTTOM)
-        panel.SetSizer(vbox)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(panel, proportion=1, flag=wx.EXPAND | wx.ALL)
+
+        #add wigets to sizers
+        hbox.Add(record, 0, wx.ALIGN_BOTTOM | wx.EXPAND)
+        vbox.AddStretchSpacer()
+        vbox.Add(hbox, 0, wx.ALIGN_CENTER | wx.EXPAND)
+
+        sizer.Add(vbox, wx.EXPAND)
         self.SetSizer(sizer)
 
 class RecordPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent=parent)
-        #self.SetBackgroundColour('black')
+        self.SetBackgroundColour('black')
         panel = wx.Panel(self, wx.ID_ANY, size=(600,900))
         panel.SetBackgroundColour('black')
         panel2 = wx.Panel(self, wx.ID_ANY)
@@ -87,6 +88,9 @@ class SBFrame(wx.Frame):
 
     def __init__(self, parent, title):
 
+        global storybox;
+        storybox = wx.GetApp()
+
         #setup panels
         wx.Frame.__init__(self, None, wx.ID_ANY, "Storybox")
         self.lpanel = LoopPanel(self)
@@ -109,17 +113,18 @@ class SBFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.SwitchPanel, switch_to_rpanel)
         self.Bind(wx.EVT_MENU, self.SwitchPanel, switch_to_lpanel)
         self.Bind(wx.EVT_MENU, self.SwitchPanel, switch_to_ppanel)
-        self.Bind(wx.EVT_MENU, self.CleanUp, cleanup)
+        self.Bind(wx.EVT_MENU, storybox.CleanUp, cleanup)
         menubar.Append(fileMenu, '&File')
         self.SetMenuBar(menubar)
-        
-    def SwitchPanel(self, e):
-        storybox = wx.GetApp()
-        
-        #hide panels
+
+    def HidePanels(self):
         self.lpanel.Hide()
         self.ppanel.Hide()
         self.rpanel.Hide()
+        
+    def SwitchPanel(self, e):
+        storybox = wx.GetApp()
+        self.HidePanels()
         
         #switching from menu
         panel = e.GetId()
@@ -144,46 +149,6 @@ class SBFrame(wx.Frame):
 
         self.Layout()
 
-    def StoryLoop(self, e):
-        obj = e.GetEventObject()
-        obj.Hide()
-        print(obj)
-        isPressed = obj.GetValue()
-        if(isPressed):
-            if(HIDE_TOGGLE):
-                obj.Hide()
-            print(obj)
-            obj.SetLabel('Stop')
-            obj.SetBackgroundColour('red')
-
-            files = os.listdir(STORY_DIR)
-            for file in files:
-                while(isPressed):
-                    isPressed = obj.GetValue()
-                    if(isPressed):
-                        #omx = Popen(['omxplayer','--win','200 0 1700 900', STORY_DIR + file], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-                        omx = Popen(['omxplayer','--win','0 0 100 100', STORY_DIR + file], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-                        sleep(10)
-                    else:
-                        break
-
-    #def Record(self, e):
-
-    def RecordVideo(self, e):
-        obj = e.GetEventObject()
-        print(obj)
-        
-    #def CountDown(self):
-        #self.timer.Bind(wx.EVT_TIMER, self.update, self.timer)
-        #TODO countdown
-
-    #def update(self, event):
-        #TODO update
-
-    def CleanUp(self, e):
-        pkill = Popen(['pkill', 'omxplayer,picam'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        pkill.wait()
-
 class StoryBox(wx.App):
     def OnInit(self):
         self.frame = SBFrame(None, "Storybox")
@@ -193,23 +158,40 @@ class StoryBox(wx.App):
             self.frame.ShowFullScreen(True)
         else:
             self.frame.Show(True)
-            
+
+        #init LoopPanel
+        self.frame.HidePanels()
+        self.LoopPanel()
+
         return True;
 
-    def RecordPanel(self):
-        print('record panel')
-
+    def LoopVideos(self):
+        global looping, loop
+        looping = True
+        while looping:
+            files = os.listdir(STORY_DIR)
+            for file in files:
+                print(file)
+                #call(['omxplayer','--win','200 0 1700 900', STORY_DIR + file])
+                call(['omxplayer','--win','0 0 100 100', STORY_DIR + file])
+                #loop = Popen(['omxplayer', '--win', '0 0 100 100', STORY_DIR + file])
+                if not looping:
+                    break
+            
     def LoopPanel(self):
         self.frame.lpanel.Show()
         #start video loop
-        files = os.listdir(STORY_DIR)
-        for file in files:
-            #omx = Popen(['omxplayer','--win','200 0 1700 900', STORY_DIR + file], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            omx = Popen(['omxplayer','--win','0 0 100 100', STORY_DIR + file], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            omx.communicate()
+        thread = threading.Thread(target=self.LoopVideos)
+        thread.start()
             
     def PreviewPanel(self):
         print('preview panel')
+
+    def CleanUp(self, e):
+        global looping
+        looping = False
+        pkill = call('pkill omxplayer', shell=True)
+        pkill = call('pkill picam', shell=True)
     
 #---- Main
 if __name__ == '__main__':
