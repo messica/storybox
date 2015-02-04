@@ -15,9 +15,9 @@ STORY_DIR = '../stories/'
 STORY_FILENAME = 'story'
 STORY_LENGTH = 60
 TEMP_DIR = 'rec/archive'
-START_FULL_SCREEN = False
 VIDEO_HEIGHT = 900
 VIDEO_WIDTH = 1400
+DEBUG = True
 
 #---- Menu Stuff
 RPANEL = 101
@@ -136,18 +136,30 @@ class PreviewPanel(wx.Panel):
         clock.SetForegroundColour('black')
         clock.SetBackgroundColour('#CCCCCC')
         clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        record = wx.Button(panel2, wx.ID_ANY, label="START RECORDING", name="lpanel", style=wx.ALIGN_LEFT, size=(800,100))
-        record.SetForegroundColour('white')
-        record.SetBackgroundColour('green')
-        record.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        #record.Bind(wx.EVT_BUTTON, self.ToggleRecord)
+        save = wx.Button(panel2, wx.ID_ANY, label="Save", name="lpanel")
+        redo = wx.Button(panel2, wx.ID_ANY, label="Redo", name="lpanel")
+        cancel = wx.Button(panel2, wx.ID_ANY, label="Cancel", name="lpanel")
+        save.SetForegroundColour('white')
+        save.SetBackgroundColour('green')
+        save.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        redo.SetForegroundColour('white')
+        redo.SetBackgroundColour('blue')
+        redo.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        cancel.SetForegroundColour('white')
+        cancel.SetBackgroundColour('red')
+        cancel.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        hbox.Add(save, 1, wx.EXPAND)
+        hbox.Add(redo, 1, wx.EXPAND)
+        hbox.Add(cancel, 1, wx.EXPAND)
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(clock, flag=wx.ALIGN_RIGHT)
-        vbox.Add(record, flag=wx.ALIGN_CENTER_HORIZONTAL)
+        vbox.Add(clock, 0, wx.ALIGN_RIGHT)
+        vbox.Add(hbox, 1, wx.EXPAND)
+
         panel.SetSizer(vbox)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(panel, flag=wx.EXPAND | wx.ALL)
-        sizer.Add(panel2, flag=wx.EXPAND | wx.ALL)
+        sizer.Add(panel, 1, wx.EXPAND)
+        sizer.Add(panel2, 1, wx.EXPAND)
         self.SetSizer(sizer)
         
 class SBFrame(wx.Frame):
@@ -191,7 +203,6 @@ class SBFrame(wx.Frame):
     def SwitchPanel(self, e=None, panel=None):
         storybox = wx.GetApp()
         self.HidePanels()
-        print(e)
         
         #switching from menu
         panel = e.GetId()
@@ -205,7 +216,6 @@ class SBFrame(wx.Frame):
             #switching from button
             btn = e.GetEventObject()
             panel = btn.GetName()
-            print(panel)
             if panel == 'rpanel':
                 storybox.RecordPanel()
             if panel == 'lpanel':
@@ -220,7 +230,7 @@ class StoryBox(wx.App):
         self.frame = SBFrame(None, "Storybox")
         self.SetTopWindow(self.frame)
         self.frame.Maximize()
-        if START_FULL_SCREEN:
+        if not DEBUG:
             self.frame.ShowFullScreen(True)
         else:
             self.frame.Show(True)
@@ -238,14 +248,14 @@ class StoryBox(wx.App):
             files = os.listdir(STORY_DIR)
             for file in files:
                 print(file)
-                #call(['omxplayer','--win','200 0 1700 900', STORY_DIR + file])
-                call(['omxplayer','--win','0 0 100 100', STORY_DIR + file])
+                call(['omxplayer','--win','200 0 1700 900', STORY_DIR + file])
+                #call(['omxplayer','--win','0 0 100 100', STORY_DIR + file])
                 if not looping:
                     break
 
     def PreviewCamera(self):
-        call(['picam', '--alsadev', 'hw:1,0', '--previewrect', '0,0,100,100'])
-        #call(['picam', '--alsadev', 'hw:1,0', '--previewrect', '200,0,1024,768'])
+        #call(['picam', '--alsadev', 'hw:1,0', '--previewrect', '0,0,100,100'])
+        call(['picam', '--alsadev', 'hw:1,0', '--previewrect', '200,0,1024,768'])
 
     def StartRecording(self):
         global recording
