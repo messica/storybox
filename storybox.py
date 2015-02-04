@@ -6,11 +6,10 @@
 # by Jessica Oros
 #=======================================
 
-#---- Includes
 import os, wx, threading
 from subprocess import call, check_output
 
-#---- Settings
+#-Settings-#
 STORY_DIR = '../stories/'
 STORY_FILENAME = 'story'
 STORY_LENGTH = 60
@@ -19,42 +18,9 @@ VIDEO_HEIGHT = 900
 VIDEO_WIDTH = 1400
 DEBUG = True
 
-#---- Menu Stuff
 RPANEL = 101
 LPANEL = 102
 PPANEL = 103
-
-#---- Classes
-'''
-class LoopPanel(wx.Panel):
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent=parent)
-        self.SetBackgroundColour('black')
-
-        #create widgets
-        panel = wx.Panel(self, wx.ID_ANY, size=(600,900))
-        panel.SetBackgroundColour('black')
-        panel2 = wx.Panel(self, wx.ID_ANY)
-        panel2.SetBackgroundColour('black')
-        record = wx.Button(panel2, wx.ID_ANY, "TOUCH HERE TO RECORD YOUR OWN " + str(STORY_LENGTH) + " SECOND STORY!", name='rpanel', size=(1000,100))
-        record.SetForegroundColour('white')
-        record.SetBackgroundColour('black')
-        record.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        record.Bind(wx.EVT_BUTTON, parent.SwitchPanel)
-
-        #create sizers
-        vbox = wx.BoxSizer(wx.VERTICAL)
-
-        #add wigets to sizers
-        vbox.Add(record, wx.ALIGN_CENTER_HORIZONTAL)
-
-        panel2.SetSizer(vbox)
-
-        #create main sizer
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(panel, wx.EXPAND)
-        sizer.Add(panel2, wx.EXPAND)
-        self.SetSizer(sizer)'''
 
 class LoopPanel(wx.Panel):
     def __init__(self, parent):
@@ -69,18 +35,18 @@ class LoopPanel(wx.Panel):
         clock.SetForegroundColour('black')
         clock.SetBackgroundColour('black')
         clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        record = wx.Button(panel2, wx.ID_ANY, label="TOUCH HERE TO RECORD YOUR OWN " + str(STORY_LENGTH) + " SECOND STORY!", name='rpanel', style=wx.ALIGN_LEFT)
+        record = wx.Button(panel2, wx.ID_ANY, label="Touch here to add your own story!", name='rpanel')
         record.SetForegroundColour('white')
-        record.SetBackgroundColour('black')
+        record.SetBackgroundColour('#28024f')
         record.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         record.Bind(wx.EVT_BUTTON, parent.SwitchPanel)
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(clock, flag=wx.ALIGN_RIGHT)
-        vbox.Add(record, flag=wx.ALIGN_CENTER_HORIZONTAL)
+        vbox.Add(clock, 0, flag=wx.ALIGN_RIGHT)
+        vbox.Add(record, 1, wx.ALIGN_CENTER_HORIZONTAL | wx.EXPAND)
         panel.SetSizer(vbox)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(panel, flag=wx.EXPAND | wx.ALL)
-        sizer.Add(panel2, flag=wx.EXPAND | wx.ALL)
+        sizer.Add(panel, 1, flag=wx.EXPAND)
+        sizer.Add(panel2, 1, flag=wx.EXPAND)
         self.SetSizer(sizer)
 
 class RecordPanel(wx.Panel):
@@ -96,18 +62,18 @@ class RecordPanel(wx.Panel):
         clock.SetForegroundColour('black')
         clock.SetBackgroundColour('#CCCCCC')
         clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        record = wx.Button(panel2, wx.ID_ANY, label="START RECORDING", name="lpanel", style=wx.ALIGN_LEFT, size=(800,100))
+        record = wx.Button(panel2, wx.ID_ANY, label="Start Recording", name="lpanel", style=wx.ALIGN_LEFT, size=(800,100))
         record.SetForegroundColour('white')
-        record.SetBackgroundColour('green')
+        record.SetBackgroundColour('#0072bb')
         record.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         record.Bind(wx.EVT_BUTTON, self.ToggleRecord)
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(clock, flag=wx.ALIGN_RIGHT)
-        vbox.Add(record, flag=wx.ALIGN_CENTER_HORIZONTAL)
+        vbox.Add(clock, 0, flag=wx.ALIGN_RIGHT)
+        vbox.Add(record, 1, wx.EXPAND | wx.ALIGN_CENTER_HORIZONTAL)
         panel.SetSizer(vbox)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(panel, flag=wx.EXPAND | wx.ALL)
-        sizer.Add(panel2, flag=wx.EXPAND | wx.ALL)
+        sizer.Add(panel, 1, wx.EXPAND)
+        sizer.Add(panel2, 1, wx.EXPAND)
         self.SetSizer(sizer)
 
     def ToggleRecord(self, e):
@@ -115,12 +81,12 @@ class RecordPanel(wx.Panel):
         btn = e.GetEventObject()
         if not recording:
             wx.GetApp().StartRecording()
-            btn.SetBackgroundColour('red')
-            btn.SetLabel('STOP RECORDING')
+            btn.SetBackgroundColour('#932e72')
+            btn.SetLabel('Stop Recording')
         else:
             wx.GetApp().StopRecording()
-            btn.SetBackgroundColour('green')
-            btn.SetLabel('START RECORDING')
+            btn.SetBackgroundColour('#0072bb')
+            btn.SetLabel('Start Recording')
             self.GetParent().SwitchPanel(e)
 
 class PreviewPanel(wx.Panel):
@@ -143,10 +109,10 @@ class PreviewPanel(wx.Panel):
         save.SetBackgroundColour('green')
         save.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         redo.SetForegroundColour('white')
-        redo.SetBackgroundColour('blue')
+        redo.SetBackgroundColour('#0072bb')
         redo.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         cancel.SetForegroundColour('white')
-        cancel.SetBackgroundColour('red')
+        cancel.SetBackgroundColour('#c5383e')
         cancel.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(save, 1, wx.EXPAND)
@@ -307,7 +273,6 @@ class StoryBox(wx.App):
         pkill = call('pkill omxplayer', shell=True)
         pkill = call('pkill picam', shell=True)
     
-#---- Main
 if __name__ == '__main__':
     sb = StoryBox()
     sb.MainLoop()
