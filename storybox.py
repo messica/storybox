@@ -16,6 +16,8 @@ STORY_LENGTH = 60
 TEMP_DIR = 'rec/archive'
 VIDEO_HEIGHT = 900
 VIDEO_WIDTH = 1400
+VFLIP = False
+HFLIP = False
 DEBUG = True
 
 RPANEL = 101
@@ -87,7 +89,7 @@ class RecordPanel(wx.Panel):
             wx.GetApp().StopRecording()
             btn.SetBackgroundColour('#0072bb')
             btn.SetLabel('Start Recording')
-            self.GetParent().SwitchPanel(e)
+            self.GetParent().SwitchPanel(None, 'ppanel')
 
 class PreviewPanel(wx.Panel):
     def __init__(self, parent):
@@ -103,17 +105,20 @@ class PreviewPanel(wx.Panel):
         clock.SetBackgroundColour('#CCCCCC')
         clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         save = wx.Button(panel2, wx.ID_ANY, label="Save", name="lpanel")
-        redo = wx.Button(panel2, wx.ID_ANY, label="Redo", name="lpanel")
+        redo = wx.Button(panel2, wx.ID_ANY, label="Redo", name="rpanel")
         cancel = wx.Button(panel2, wx.ID_ANY, label="Cancel", name="lpanel")
         save.SetForegroundColour('white')
         save.SetBackgroundColour('green')
         save.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        save.Bind(wx.EVT_BUTTON, wx.GetApp().SaveVideo)
         redo.SetForegroundColour('white')
         redo.SetBackgroundColour('#0072bb')
         redo.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        redo.Bind(wx.EVT_BUTTON, parent.SwitchPanel)
         cancel.SetForegroundColour('white')
         cancel.SetBackgroundColour('#c5383e')
         cancel.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        cancel.Bind(wx.EVT_BUTTON, parent.SwitchPanel)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(save, 1, wx.EXPAND)
         hbox.Add(redo, 1, wx.EXPAND)
@@ -166,28 +171,32 @@ class SBFrame(wx.Frame):
         self.ppanel.Hide()
         self.rpanel.Hide()
         
-    def SwitchPanel(self, e=None, panel=None):
-        storybox = wx.GetApp()
+    def SwitchPanel(self, e=None, panel=""):
         self.HidePanels()
-        
-        #switching from menu
-        panel = e.GetId()
-        if panel is RPANEL:
-            storybox.RecordPanel()
-        elif panel is LPANEL:
-            storybox.LoopPanel()
-        elif panel is PPANEL:
-            storybox.PreviewPanel()
-        else:
-            #switching from button
-            btn = e.GetEventObject()
-            panel = btn.GetName()
-            if panel == 'rpanel':
-                storybox.RecordPanel()
-            if panel == 'lpanel':
-                storybox.LoopPanel()
-            if panel == 'ppanel':
-                storybox.PreviewPanel()
+        print('panel before: ' + panel)
+
+        if not panel:
+            #switching from menu
+            panel = e.GetId()
+            if panel is RPANEL:
+                panel = 'rpanel'
+            elif panel is LPANEL:
+                panel = 'lpanel'
+            elif panel is PPANEL:
+                panel = 'ppanel'
+            else:
+                #switching from button
+                btn = e.GetEventObject()
+                panel = btn.GetName()
+
+        print('panel after: ' + panel)
+
+        if panel == 'rpanel':
+            wx.GetApp().RecordPanel()
+        if panel == 'lpanel':
+            wx.GetApp().LoopPanel()
+        if panel == 'ppanel':
+            wx.GetApp().PreviewPanel()
 
         self.Layout()
 
@@ -234,6 +243,7 @@ class StoryBox(wx.App):
         print('StopRecording')
         open('hooks/stop_record', 'w')
         recording = False
+        self.frame.SwitchPanel(None, 'ppanel')
 
     def PreviewVideo(self):
         global previewing
@@ -243,9 +253,24 @@ class StoryBox(wx.App):
             call('omxplayer --win "200 0 1700 900" rec/archive/*.ts', shell=True)
             if not previewing:
                 break
-            
+
+    def SaveVideo(self, e):
+        global encoding
+        ffmpeg = threading.Thread(target=self.EncodeVideo)
+        ffmpeg.start()
+        ffmpeg.join()
+        self.frame.SwitchPanel(e)
+
+    def EncodeVideo(self, e):
+        global encoding
+        encoding += 1
+        output = check_output('ffmpeg -i rec/archive/*.ts -c:v copy -c:a copy -bsf:a aac_adtstoasc ../stories/story003.mp4', shell=True)
+        print(output)
+        encoding -= 1
+        
     def LoopPanel(self):
         self.CleanUp()
+        self.DeleteTempFiles()
         self.frame.lpanel.Show()
         #start video loop
         loop = threading.Thread(target=self.LoopVideos)
@@ -253,6 +278,7 @@ class StoryBox(wx.App):
 
     def RecordPanel(self):
         self.CleanUp()
+        self.DeleteTempFiles()
         self.frame.rpanel.Show()
         #start camera
         camera = threading.Thread(target=self.PreviewCamera)
@@ -272,6 +298,10 @@ class StoryBox(wx.App):
         recording = False
         pkill = call('pkill omxplayer', shell=True)
         pkill = call('pkill picam', shell=True)
+
+    def DeleteTempFiles(self):
+        print('DeleteTempFiles')
+        call('rm -rf hooks state rec', shell=True)
     
 if __name__ == '__main__':
     sb = StoryBox()
