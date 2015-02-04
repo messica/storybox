@@ -64,14 +64,22 @@ class RecordPanel(wx.Panel):
         clock.SetForegroundColour('black')
         clock.SetBackgroundColour('#CCCCCC')
         clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        record = wx.Button(panel2, wx.ID_ANY, label="Start Recording", name="lpanel", style=wx.ALIGN_LEFT, size=(800,100))
+        record = wx.Button(panel2, wx.ID_ANY, label="Start Recording", name="lpanel")
         record.SetForegroundColour('white')
         record.SetBackgroundColour('#0072bb')
         record.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         record.Bind(wx.EVT_BUTTON, self.ToggleRecord)
+        cancel = wx.Button(panel2, wx.ID_ANY, label="Cancel", name="lpanel")
+        cancel.SetForegroundColour('white')
+        cancel.SetBackgroundColour('#c5383e')
+        cancel.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        cancel.Bind(wx.EVT_BUTTON, parent.SwitchPanel)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        hbox.Add(record, 1, wx.EXPAND)
+        hbox.Add(cancel, 1, wx.EXPAND)
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(clock, 0, flag=wx.ALIGN_RIGHT)
-        vbox.Add(record, 1, wx.EXPAND | wx.ALIGN_CENTER_HORIZONTAL)
+        vbox.Add(hbox, 1, wx.EXPAND)
         panel.SetSizer(vbox)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(panel, 1, wx.EXPAND)
@@ -107,6 +115,10 @@ class PreviewPanel(wx.Panel):
         save = wx.Button(panel2, wx.ID_ANY, label="Save", name="lpanel")
         redo = wx.Button(panel2, wx.ID_ANY, label="Redo", name="rpanel")
         cancel = wx.Button(panel2, wx.ID_ANY, label="Cancel", name="lpanel")
+        cancel.SetForegroundColour('white')
+        cancel.SetBackgroundColour('#c5383e')
+        cancel.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        cancel.Bind(wx.EVT_BUTTON, parent.SwitchPanel)
         save.SetForegroundColour('white')
         save.SetBackgroundColour('green')
         save.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -115,10 +127,6 @@ class PreviewPanel(wx.Panel):
         redo.SetBackgroundColour('#0072bb')
         redo.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         redo.Bind(wx.EVT_BUTTON, parent.SwitchPanel)
-        cancel.SetForegroundColour('white')
-        cancel.SetBackgroundColour('#c5383e')
-        cancel.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-        cancel.Bind(wx.EVT_BUTTON, parent.SwitchPanel)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(save, 1, wx.EXPAND)
         hbox.Add(redo, 1, wx.EXPAND)
@@ -229,7 +237,7 @@ class StoryBox(wx.App):
 
     def PreviewCamera(self):
         #call(['picam', '--alsadev', 'hw:1,0', '--previewrect', '0,0,100,100'])
-        call(['picam', '--alsadev', 'hw:1,0', '--previewrect', '200,0,1024,768'])
+        call(['picam', '--alsadev', 'hw:1,0', '--previewrect', '200,0,1400,900'])
 
     def StartRecording(self):
         global recording
@@ -263,8 +271,7 @@ class StoryBox(wx.App):
         encoding += 1
         files = os.listdir(STORY_DIR)
         new_story = STORY_DIR + STORY_FILENAME + str(len(files)+1) + '.mp4'
-        output = check_output('ffmpeg -i ' + TEMP_DIR + '*.ts -c:v copy -c:a copy -bsf:a aac_adtstoasc ' + new_story, shell=True)
-        print('output: \n' + output)
+        call('ffmpeg -i ' + TEMP_DIR + '*.ts -c:v copy -c:a copy -bsf:a aac_adtstoasc ' + new_story, shell=True)
         encoding -= 1
         
     def LoopPanel(self):
