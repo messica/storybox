@@ -13,16 +13,16 @@ from subprocess import call, check_output
 STORY_DIR = '../stories/'
 STORY_FILENAME = 'story'
 STORY_LENGTH = 60
-TEMP_DIR = 'rec/archive'
 VIDEO_HEIGHT = 900
 VIDEO_WIDTH = 1400
 VFLIP = False
 HFLIP = False
-DEBUG = True
+DEBUG = False
 
 RPANEL = 101
 LPANEL = 102
 PPANEL = 103
+TEMP_DIR = 'rec/archive/'
 
 class LoopPanel(wx.Panel):
     def __init__(self, parent):
@@ -173,7 +173,6 @@ class SBFrame(wx.Frame):
         
     def SwitchPanel(self, e=None, panel=""):
         self.HidePanels()
-        print('panel before: ' + panel)
 
         if not panel:
             #switching from menu
@@ -188,8 +187,6 @@ class SBFrame(wx.Frame):
                 #switching from button
                 btn = e.GetEventObject()
                 panel = btn.GetName()
-
-        print('panel after: ' + panel)
 
         if panel == 'rpanel':
             wx.GetApp().RecordPanel()
@@ -214,6 +211,9 @@ class StoryBox(wx.App):
         self.frame.HidePanels()
         self.LoopPanel()
 
+        global encoding
+        encoding = 0
+
         return True;
 
     def LoopVideos(self):
@@ -222,7 +222,6 @@ class StoryBox(wx.App):
         while looping:
             files = os.listdir(STORY_DIR)
             for file in files:
-                print(file)
                 call(['omxplayer','--win','200 0 1700 900', STORY_DIR + file])
                 #call(['omxplayer','--win','0 0 100 100', STORY_DIR + file])
                 if not looping:
@@ -234,13 +233,11 @@ class StoryBox(wx.App):
 
     def StartRecording(self):
         global recording
-        print('StartRecording')
         open('hooks/start_record', 'w')
         recording = True
 
     def StopRecording(self):
         global recording
-        print('StopRecording')
         open('hooks/stop_record', 'w')
         recording = False
         self.frame.SwitchPanel(None, 'ppanel')
@@ -261,11 +258,13 @@ class StoryBox(wx.App):
         ffmpeg.join()
         self.frame.SwitchPanel(e)
 
-    def EncodeVideo(self, e):
+    def EncodeVideo(self):
         global encoding
         encoding += 1
-        output = check_output('ffmpeg -i rec/archive/*.ts -c:v copy -c:a copy -bsf:a aac_adtstoasc ../stories/story003.mp4', shell=True)
-        print(output)
+        files = os.listdir(STORY_DIR)
+        new_story = STORY_DIR + STORY_FILENAME + str(len(files)+1) + '.mp4'
+        output = check_output('ffmpeg -i ' + TEMP_DIR + '*.ts -c:v copy -c:a copy -bsf:a aac_adtstoasc ' + new_story, shell=True)
+        print('output: \n' + output)
         encoding -= 1
         
     def LoopPanel(self):
@@ -300,7 +299,6 @@ class StoryBox(wx.App):
         pkill = call('pkill picam', shell=True)
 
     def DeleteTempFiles(self):
-        print('DeleteTempFiles')
         call('rm -rf hooks state rec', shell=True)
     
 if __name__ == '__main__':
