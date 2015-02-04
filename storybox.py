@@ -8,12 +8,13 @@
 
 #---- Includes
 import os, wx, threading
-from subprocess import call, Popen, PIPE
+from subprocess import call, check_output
 
 #---- Settings
 STORY_DIR = '../stories/'
 STORY_FILENAME = 'story'
 STORY_LENGTH = 60
+TEMP_DIR = 'rec/archive'
 START_FULL_SCREEN = False
 VIDEO_HEIGHT = 900
 VIDEO_WIDTH = 1400
@@ -64,6 +65,7 @@ class LoopPanel(wx.Panel):
         panel2 = wx.Panel(self, wx.ID_ANY)
         panel2.SetBackgroundColour('black')
         clock = wx.StaticText(panel, wx.ID_ANY, ":" + str(STORY_LENGTH), style=wx.ALIGN_CENTER, size=(400,400))
+        #blackout for now
         clock.SetForegroundColour('black')
         clock.SetBackgroundColour('black')
         clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
@@ -90,7 +92,8 @@ class RecordPanel(wx.Panel):
         panel2 = wx.Panel(self, wx.ID_ANY)
         panel2.SetBackgroundColour('black')
         clock = wx.StaticText(panel, wx.ID_ANY, ":" + str(STORY_LENGTH), style=wx.ALIGN_CENTER, size=(400,400))
-        clock.SetForegroundColour('#CCAA00')
+        #blackout for now
+        clock.SetForegroundColour('black')
         clock.SetBackgroundColour('#CCCCCC')
         clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         record = wx.Button(panel2, wx.ID_ANY, label="START RECORDING", name="lpanel", style=wx.ALIGN_LEFT, size=(800,100))
@@ -124,6 +127,28 @@ class PreviewPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent=parent)
         self.SetBackgroundColour('black')
+        panel = wx.Panel(self, wx.ID_ANY, size=(600,900))
+        panel.SetBackgroundColour('black')
+        panel2 = wx.Panel(self, wx.ID_ANY)
+        panel2.SetBackgroundColour('black')
+        clock = wx.StaticText(panel, wx.ID_ANY, ":" + str(STORY_LENGTH), style=wx.ALIGN_CENTER, size=(400,400))
+        #blackout for now
+        clock.SetForegroundColour('black')
+        clock.SetBackgroundColour('#CCCCCC')
+        clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        record = wx.Button(panel2, wx.ID_ANY, label="START RECORDING", name="lpanel", style=wx.ALIGN_LEFT, size=(800,100))
+        record.SetForegroundColour('white')
+        record.SetBackgroundColour('green')
+        record.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
+        #record.Bind(wx.EVT_BUTTON, self.ToggleRecord)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(clock, flag=wx.ALIGN_RIGHT)
+        vbox.Add(record, flag=wx.ALIGN_CENTER_HORIZONTAL)
+        panel.SetSizer(vbox)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(panel, flag=wx.EXPAND | wx.ALL)
+        sizer.Add(panel2, flag=wx.EXPAND | wx.ALL)
+        self.SetSizer(sizer)
         
 class SBFrame(wx.Frame):
 
@@ -235,8 +260,14 @@ class StoryBox(wx.App):
         recording = False
 
     def PreviewVideo(self):
-        print('PreviewVideo')
-        
+        global previewing
+        previewing = True
+        while previewing:
+            #call('omxplayer --win "0 0 100 100" rec/archive/*.ts', shell=True)
+            call('omxplayer --win "200 0 1700 900" rec/archive/*.ts', shell=True)
+            if not previewing:
+                break
+            
     def LoopPanel(self):
         self.CleanUp()
         self.frame.lpanel.Show()
@@ -259,7 +290,8 @@ class StoryBox(wx.App):
         preview.start()
 
     def CleanUp(self, e=None):
-        global looping, recording
+        global looping, recording, previewing
+        previewing = False
         looping = False
         recording = False
         pkill = call('pkill omxplayer', shell=True)
