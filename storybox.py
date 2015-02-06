@@ -13,37 +13,32 @@ from subprocess import call, check_output
 STORY_DIR = '../stories/'
 STORY_FILENAME = 'story'
 STORY_LENGTH = 60
-VIDEO_HEIGHT = 900
-VIDEO_WIDTH = 1400
-VFLIP = False
-HFLIP = False
+PLAYER_WINDOW = '0 100 1280 720'
+CAMERA_WINDOW = '0,0,1280,720'
+CAMERA_VFLIP = True
+CAMERA_HFLIP = False
+ALSA_DEVICE = '1,0'
 DEBUG = False
 
 RPANEL = 101
 LPANEL = 102
 PPANEL = 103
-TEMP_DIR = 'rec/archive/'
 
 class LoopPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent=parent)
         self.SetBackgroundColour('black')
-        panel = wx.Panel(self, wx.ID_ANY, size=(600,900))
+        panel = wx.Panel(self, wx.ID_ANY)
         panel.SetBackgroundColour('black')
         panel2 = wx.Panel(self, wx.ID_ANY)
         panel2.SetBackgroundColour('black')
-        clock = wx.StaticText(panel, wx.ID_ANY, ":" + str(STORY_LENGTH), style=wx.ALIGN_CENTER, size=(400,400))
-        #blackout for now
-        clock.SetForegroundColour('black')
-        clock.SetBackgroundColour('black')
-        clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         record = wx.Button(panel2, wx.ID_ANY, label="Touch here to add your own story!", name='rpanel')
         record.SetForegroundColour('white')
         record.SetBackgroundColour('#28024f')
         record.SetFont(wx.Font(36, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         record.Bind(wx.EVT_BUTTON, parent.SwitchPanel)
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(clock, 0, flag=wx.ALIGN_RIGHT)
+        vbox.AddStretchSpacer(3)
         vbox.Add(record, 1, wx.ALIGN_CENTER_HORIZONTAL | wx.EXPAND)
         panel.SetSizer(vbox)
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -55,15 +50,10 @@ class RecordPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent=parent)
         self.SetBackgroundColour('black')
-        panel = wx.Panel(self, wx.ID_ANY, size=(600,900))
+        panel = wx.Panel(self, wx.ID_ANY)
         panel.SetBackgroundColour('black')
         panel2 = wx.Panel(self, wx.ID_ANY)
         panel2.SetBackgroundColour('black')
-        clock = wx.StaticText(panel, wx.ID_ANY, ":" + str(STORY_LENGTH), style=wx.ALIGN_CENTER, size=(400,400))
-        #blackout for now
-        clock.SetForegroundColour('black')
-        clock.SetBackgroundColour('#CCCCCC')
-        clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         record = wx.Button(panel2, wx.ID_ANY, label="Start Recording", name="lpanel")
         record.SetForegroundColour('white')
         record.SetBackgroundColour('#0072bb')
@@ -78,7 +68,7 @@ class RecordPanel(wx.Panel):
         hbox.Add(record, 1, wx.EXPAND)
         hbox.Add(cancel, 1, wx.EXPAND)
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(clock, 0, flag=wx.ALIGN_RIGHT)
+        vbox.AddStretchSpacer(3)
         vbox.Add(hbox, 1, wx.EXPAND)
         panel.SetSizer(vbox)
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -103,15 +93,10 @@ class PreviewPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent=parent)
         self.SetBackgroundColour('black')
-        panel = wx.Panel(self, wx.ID_ANY, size=(600,900))
+        panel = wx.Panel(self, wx.ID_ANY)
         panel.SetBackgroundColour('black')
         panel2 = wx.Panel(self, wx.ID_ANY)
         panel2.SetBackgroundColour('black')
-        clock = wx.StaticText(panel, wx.ID_ANY, ":" + str(STORY_LENGTH), style=wx.ALIGN_CENTER, size=(400,400))
-        #blackout for now
-        clock.SetForegroundColour('black')
-        clock.SetBackgroundColour('#CCCCCC')
-        clock.SetFont(wx.Font(100, wx.DEFAULT, wx.NORMAL, wx.BOLD))
         save = wx.Button(panel2, wx.ID_ANY, label="Save", name="lpanel")
         redo = wx.Button(panel2, wx.ID_ANY, label="Redo", name="rpanel")
         cancel = wx.Button(panel2, wx.ID_ANY, label="Cancel", name="lpanel")
@@ -132,7 +117,7 @@ class PreviewPanel(wx.Panel):
         hbox.Add(redo, 1, wx.EXPAND)
         hbox.Add(cancel, 1, wx.EXPAND)
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(clock, 0, wx.ALIGN_RIGHT)
+        vbox.AddStretchSpacer(3)
         vbox.Add(hbox, 1, wx.EXPAND)
 
         panel.SetSizer(vbox)
@@ -230,14 +215,17 @@ class StoryBox(wx.App):
         while looping:
             files = os.listdir(STORY_DIR)
             for file in files:
-                call(['omxplayer','--win','200 0 1700 900', STORY_DIR + file])
-                #call(['omxplayer','--win','0 0 100 100', STORY_DIR + file])
+                call('omxplayer --win "' + PLAYER_WINDOW + '" ' + str(STORY_DIR) + str(file), shell=True)
                 if not looping:
                     break
 
     def PreviewCamera(self):
-        #call(['picam', '--alsadev', 'hw:1,0', '--previewrect', '0,0,100,100'])
-        call(['picam', '--alsadev', 'hw:1,0', '--previewrect', '200,0,1400,900'])
+        picam = 'picam --alsadev hw:' + ALSA_DEVICE + ' --previewrect ' + CAMERA_WINDOW
+        if CAMERA_HFLIP:
+            picam += ' --hflip'
+        if CAMERA_VFLIP:
+            picam += ' --vflip'
+        call(picam, shell=True)
 
     def StartRecording(self):
         global recording
@@ -254,8 +242,7 @@ class StoryBox(wx.App):
         global previewing
         previewing = True
         while previewing:
-            #call('omxplayer --win "0 0 100 100" rec/archive/*.ts', shell=True)
-            call('omxplayer --win "200 0 1700 900" rec/archive/*.ts', shell=True)
+            call('omxplayer --win "' + PLAYER_WINDOW + '" rec/archive/*.ts', shell=True)
             if not previewing:
                 break
 
@@ -271,7 +258,7 @@ class StoryBox(wx.App):
         encoding += 1
         files = os.listdir(STORY_DIR)
         new_story = STORY_DIR + STORY_FILENAME + str(len(files)+1) + '.mp4'
-        call('ffmpeg -i ' + TEMP_DIR + '*.ts -c:v copy -c:a copy -bsf:a aac_adtstoasc ' + new_story, shell=True)
+        call('ffmpeg -i rec/archive/*.ts -c:v copy -c:a copy -bsf:a aac_adtstoasc ' + new_story, shell=True)
         encoding -= 1
         
     def LoopPanel(self):
